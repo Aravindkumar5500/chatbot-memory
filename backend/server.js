@@ -17,11 +17,11 @@ const PORT = process.env.PORT || 3001;
 // MongoDB Connection Protocol
 const MONGO_URI = process.env.MONGODB_URI;
 if (!MONGO_URI) {
-  console.warn("⚠️ MONGODB_URI not found in .env. Prepare your Atlas cluster and update the signal.");
+  console.warn("MONGODB_URI not found in .env. Prepare your Atlas cluster and update the signal.");
 } else {
   mongoose.connect(MONGO_URI)
-    .then(() => console.log('✅ Intelligence Database Synchronized (MongoDB)'))
-    .catch(err => console.error('❌ Database Signal Error:', err));
+    .then(() => console.log('Intelligence Database Synchronized (MongoDB)'))
+    .catch(err => console.error('Database Signal Error:', err));
 }
 
 const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
