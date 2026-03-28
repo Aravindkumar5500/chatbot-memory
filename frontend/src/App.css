@@ -1,0 +1,247 @@
+/* Base Reset */
+body {
+  margin: 0;
+  overflow: hidden;
+  background-color: #020617; /* Slate 950 base */
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+/* --- THE PROFESSIONAL MODERN BACKGROUND --- */
+.modern-bg-container {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(circle at 50% 50%, #0f172a 0%, #020617 100%);
+  overflow: hidden;
+}
+
+/* Animated Light Blobs (The "WOW" factor) */
+.blob {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+  filter: blur(80px);
+  border-radius: 50%;
+  z-index: -1;
+  animation: moveBlob 25s linear infinite alternate;
+}
+
+.blob-1 { top: -10%; left: -10%; background: radial-gradient(circle, rgba(37, 99, 235, 0.2) 0%, transparent 70%); }
+.blob-2 { bottom: -10%; right: -10%; background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%); animation-duration: 30s; }
+.blob-3 { top: 40%; left: 30%; width: 300px; height: 300px; background: radial-gradient(circle, rgba(14, 165, 233, 0.1) 0%, transparent 70%); animation-duration: 20s; }
+
+@keyframes moveBlob {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(100px, 100px) scale(1.1); }
+}
+
+/* Subtle Film Grain for Premium Feel */
+.modern-bg-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* --- Refined Modern Components --- */
+
+.glass-header {
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  background-color: rgba(2, 6, 23, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-input {
+  backdrop-filter: blur(40px) saturate(250%);
+  -webkit-backdrop-filter: blur(40px) saturate(250%);
+  background-color: rgba(2, 6, 23, 0.7); 
+  border: 1px solid rgba(255, 255, 255, 0.08); /* Sophisticated thin border */
+  box-shadow: 
+    0 20px 80px -20px rgba(0, 0, 0, 0.95),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-input:focus-within {
+  background-color: rgba(0, 0, 0, 0.9);
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: 
+    0 40px 100px -20px rgba(0, 0, 0, 1),
+    0 0 0 1px rgba(59, 130, 246, 0.3),
+    inset 0 1px 1px 0 rgba(59, 130, 246, 0.1);
+  transform: translateY(-8px) scale(1.01); /* High-end floating effect */
+}
+
+/* Enhanced Focus Highlight Sweep */
+.glass-input::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent, rgba(59, 130, 246, 0.05), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.8s ease;
+  pointer-events: none;
+}
+
+.glass-input:focus-within::before {
+  transform: translateX(100%);
+}
+
+/* Custom Selection for Input */
+.glass-input input::selection {
+  background-color: rgba(59, 130, 246, 0.4);
+  color: white;
+}
+
+/* SURGICAL FIX: Remove all default browser focus states */
+.glass-input input, 
+.glass-input input:focus,
+.glass-input input:active {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+/* Reflection Glimmer Sweep */
+.glass-input::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.03),
+    transparent
+  );
+  transform: skewX(-20deg);
+  animation: shimmerSweep 8s infinite linear;
+  pointer-events: none;
+}
+
+@keyframes shimmerSweep {
+  0% { left: -100%; }
+  30% { left: 200%; }
+  100% { left: 200%; }
+}
+
+.glass-bubble {
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  background-color: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Smooth Animations */
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-message {
+  animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom Scrollbar (Stealthy) */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.05); border-radius: 20px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.1); }
+
+/* --- THE PREMIUM LOADING SUITE --- */
+
+/* 1. The Top-Bar Glow Line (High-End SaaS Feel) */
+.top-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    #3b82f6, 
+    #06b6d4, 
+    #3b82f6, 
+    transparent
+  );
+  width: 100%;
+  z-index: 1000;
+  background-size: 200% 100%;
+  animation: shimmerLoader 1.5s infinite linear;
+  opacity: 1;
+}
+
+@keyframes shimmerLoader {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* 2. Shimmering Glass Bubble (Metallic Wave) */
+.premium-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.premium-shimmer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.08),
+    transparent
+  );
+  animation: shimmerWave 2s infinite cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes shimmerWave {
+  0% { left: -150%; }
+  100% { left: 150%; }
+}
+
+/* 3. Modern Dot Wave */
+.typing-dots-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #3b82f6;
+  border-radius: 50%;
+  animation: dotWave 1.4s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes dotWave {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
+  30% { transform: translateY(-4px); opacity: 1; filter: drop-shadow(0 0 4px #3b82f6); }
+}
+
+/* Micro-Pulse for the header icon (Only while loading) */
+.header-loading-pulse {
+  animation: iconBreathe 2s infinite ease-in-out;
+}
+
+@keyframes iconBreathe {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.05); filter: brightness(1.2) drop-shadow(0 0 10px rgba(59, 130, 246, 0.3)); }
+}
