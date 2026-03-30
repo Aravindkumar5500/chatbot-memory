@@ -7,7 +7,9 @@ const Groq = require('groq-sdk');
 const multer = require('multer');
 const pdf = require('pdf-parse');
 const mongoose = require('mongoose');
+const fetch = require('node-fetch');
 const Message = require('./models/Message');
+const Knowledge = require('./models/Knowledge');
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -55,6 +57,93 @@ const saveMessage = async (role, text) => {
     console.error('Error saving signal to archive:', err);
   }
 };
+// Search knowledge base
+const searchKnowledge = async (query) => {
+  try {
+    if (!query) return "";
+    
+    const results = await Knowledge.find(
+      { $text: { $search: query } },
+      { score: { $meta: "textScore" } }
+    )
+    .sort({ score: { $meta: "textScore" } })
+    .limit(3);
+
+    if (results.length === 0) return "";
+
+    let knowledgeString = "\n\n[KNOWLEDGE BASE]\n";
+    results.forEach((item, index) => {
+      knowledgeString += `[${item.category}] ${item.title}: ${item.content}\n`;
+    });
+    knowledgeString += "[END KNOWLEDGE BASE]";
+    
+    return knowledgeString;
+  } catch (err) {
+    console.error('Knowledge Search Error:', err);
+    return "";
+  }
+};
+
+// Auto fetch news function (using GNews.io)
+const fetchLatestNews = async (query) => {
+  try {
+    const GNEWS_API_KEY = process.env.GNEWS_API_KEY;
+
+    if (!GNEWS_API_KEY) {
+      console.log('GNEWS_API_KEY missing!');
+      return "";
+    }
+
+    // Clean query — simple keywords only
+    const cleanQuery = (query || "")
+      .replace(/[^a-zA-Z0-9 ]/g, '')  // special chars remove
+      .trim()
+      .split(' ')
+      .slice(0, 3)                      // max 3 words
+      .join(' ');
+
+    console.log('Clean query:', cleanQuery);
+
+    if (!cleanQuery) return "";
+
+    // GNews API v4 URL
+    const url = `https://gnews.io/api/v4/search?q=${encodeURIComponent(cleanQuery)}&apikey=${GNEWS_API_KEY}&lang=en&max=3&sortby=publishedAt`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    console.log('GNews full response:', JSON.stringify(data).substring(0, 300));
+
+    if (data.errors) {
+      console.log('GNews API error:', data.errors);
+      return "";
+    }
+
+    if (!data.articles || data.articles.length === 0) {
+      console.log('No GNews articles found!');
+      return "";
+    }
+
+    console.log('GNews articles count:', data.articles.length);
+
+    let newsContext = "\n\n[LATEST NEWS]\n";
+    data.articles.forEach(article => {
+      newsContext += `Title: ${article.title}\n`;
+      newsContext += `Summary: ${article.description}\n`;
+      newsContext += `Source: ${article.source?.name || 'Unknown'}\n`;
+      newsContext += `Published: ${article.publishedAt}\n---\n`;
+    });
+    newsContext += "[END LATEST NEWS]";
+
+    console.log('GNews context ready!');
+    return newsContext;
+
+  } catch (err) {
+    console.error('GNews Fetch Error:', err.message);
+    return "";
+  }
+};
+
 
 // Get history
 app.get('/history', async (req, res) => {
@@ -110,20 +199,38 @@ app.post('/chat', upload.single('file'), async (req, res) => {
     const history = await getHistory();
     console.log(`History count: ${history.length}`);
 
+    // Step 1 — Search MongoDB knowledge base
+    const knowledgeContext = await searchKnowledge(message || "");
+    
+    // Step 2 — If knowledge empty, fetch news
+    let newsContext = "";
+    if (!knowledgeContext) {
+      console.log('Knowledge empty — fetching latest news...');
+      newsContext = await fetchLatestNews(message || "");
+    }
+
+    // Step 3 — Combine both contexts
+    const fullContext = knowledgeContext || newsContext;
+
+    if (fullContext) {
+      console.log('Context injected:', knowledgeContext ? 'Knowledge Base' : 'News API');
+    }
+
     const groqHistory = history.map(msg => ({
       role: msg.role === 'bot' ? 'assistant' : 'user',
       content: msg.text
     }));
 
-    const SYSTEM_PROMPT = `You are a smart and helpful assistant specialized in software development and AI technology.
+    const SYSTEM_PROMPT = `You are a smart and helpful assistant.
 
 STRICT RULES:
 - Always respond in English only
 - Stay professional at all times
 - Answer clearly and concisely
-- When asked about MCP, refer to Model Context Protocol by default
-- Use knowledge base as primary source of truth
-- If not found, use general knowledge
+- Use knowledge base as PRIMARY source of truth
+- If knowledge base empty, use latest news context
+- If both empty, use general knowledge
+- Always mention source: "According to knowledge base..." or "According to latest news..."
 - Never make up facts`;
 
     let messages = [
@@ -132,9 +239,16 @@ STRICT RULES:
     ];
 
     if (imagePayload) {
+      if (fullContext) {
+        imagePayload.content[0].text += fullContext;
+      }
       messages.push(imagePayload);
     } else {
-      messages.push({ role: "user", content: finalMessage });
+      let finalContent = finalMessage;
+      if (fullContext) {
+        finalContent += fullContext;
+      }
+      messages.push({ role: "user", content: finalContent });
     }
 
     console.log(`Sending to Groq with model: ${imagePayload ? "Vision" : "Text"}`);
@@ -158,6 +272,47 @@ STRICT RULES:
     res.status(500).json({ error: 'Failed to get response', details: error.message });
   }
 });
+// --- KNOWLEDGE BASE ADMIN ENDPOINTS ---
+
+// Add Knowledge
+app.post('/admin/knowledge', async (req, res) => {
+  try {
+    const { category, title, content, tags } = req.body;
+    if (!title || !content) {
+      return res.status(400).json({ error: 'Title and content are required' });
+    }
+    
+    const entry = new Knowledge({ category, title, content, tags });
+    await entry.save();
+    res.status(201).json({ message: 'Knowledge entry secured', data: entry });
+  } catch (err) {
+    console.error('Admin Knowledge POST Error:', err);
+    res.status(500).json({ error: 'Failed to save knowledge record' });
+  }
+});
+
+// Get all Knowledge
+app.get('/admin/knowledge', async (req, res) => {
+  try {
+    const entries = await Knowledge.find().sort({ createdAt: -1 });
+    res.json(entries);
+  } catch (err) {
+    console.error('Admin Knowledge GET Error:', err);
+    res.status(500).json({ error: 'Failed to retrieve knowledge database' });
+  }
+});
+
+// Delete Knowledge
+app.delete('/admin/knowledge/:id', async (req, res) => {
+  try {
+    const result = await Knowledge.findByIdAndDelete(req.params.id);
+    if (!result) return res.status(404).json({ error: 'Record not found' });
+    res.json({ message: 'Knowledge entry purged from system' });
+  } catch (err) {
+    console.error('Admin Knowledge DELETE Error:', err);
+    res.status(500).json({ error: 'Failed to delete knowledge record' });
+  }
+});
 
 // --- NEW: KNOWLEDGE BASE VALIDATOR ENDPOINT ---
 app.post('/validate-entry', async (req, res) => {
@@ -167,19 +322,19 @@ app.post('/validate-entry', async (req, res) => {
 
   const VALIDATOR_PROMPT = `You are a knowledge base entry validator.
 
-When given a knowledge entry, strictly check:
+When given a knowledge entry, check:
 - Category must be one of: IPL, AI News, Error Fix, General
-- Title must be short and clear (max 100 characters)
-- Content must be detailed, accurate and minimum 20 words
-- Tags must be relevant keywords (minimum 2 tags)
+- Title must be clear and descriptive
+- Content must be accurate and relevant
+- Tags must be meaningful keywords
 - No offensive or irrelevant content allowed
 
 Example valid entry:
 {
   "category": "IPL",
   "title": "CSK won against MI",
-  "content": "CSK beat MI by 5 wickets in match 23 of IPL 2025 held in Chennai",
-  "tags": ["CSK", "MI", "IPL2025", "Chennai"]
+  "content": "CSK beat MI by 5 wickets in IPL 2026 held in Chennai",
+  "tags": ["CSK", "MI", "IPL2026"]
 }
 
 Return JSON only, no extra text:
