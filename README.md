@@ -4,7 +4,7 @@ A full-stack conversational assistant prototype with persistent chat history, a 
 
 ## Features in the current codebase
 
-- **Conversational chat UI** built with React, Vite, and reusable message/input/sidebar components.
+- **Conversational chat UI** built with Next.js App Router and React. The previous Vite UI remains in `frontend/src` while feature parity is migrated.
 - **Persistent conversation history** stored through MongoDB models in the Express API.
 - **Knowledge-base retrieval** using MongoDB text search across titles, content, and tags.
 - **LLM responses** powered by the Groq SDK. Text prompts use the configured chat model; image uploads use the configured vision model.
@@ -17,7 +17,7 @@ A full-stack conversational assistant prototype with persistent chat history, a 
 ## Architecture
 
 ```text
-frontend (React + Vite)
+frontend (Next.js + React)
         |
         | HTTP / multipart form data
         v
@@ -34,7 +34,7 @@ MCP stdio server --> Groq + local memory.json
 
 ## Tech stack
 
-- **Frontend:** React, Vite, Axios, React Markdown, Bootstrap, Lucide
+- **Frontend:** Next.js 15, React 18, TypeScript, CSS. Legacy Vite dependencies remain temporarily during migration.
 - **Backend:** Node.js, Express, Multer
 - **Database:** MongoDB + Mongoose
 - **AI:** Groq SDK
@@ -43,7 +43,7 @@ MCP stdio server --> Groq + local memory.json
 
 ## Run locally
 
-Requirements: Node.js, npm, and a MongoDB database.
+Requirements: Node.js 18.18+ (20 LTS recommended), npm, and a MongoDB database. The frontend is being migrated from Vite to Next.js; the legacy `frontend/src` implementation is retained during this transition.
 
 ### 1. Backend
 
@@ -75,12 +75,24 @@ In another terminal:
 ```bash
 cd frontend
 npm install
+# Optional: set NEXT_PUBLIC_API_URL=http://localhost:3001 in .env.local
 npm run dev
 ```
 
-The current frontend uses the backend at `http://localhost:3001`. Start the backend before sending messages.
+Open `http://localhost:3000`. The Next.js workspace uses the conversation API at `http://localhost:3001` by default. Start MongoDB and the backend before sending messages.
 
-### 3. MCP server (optional)
+### 3. Migrate existing messages (run once)
+
+After configuring `backend/.env` and starting MongoDB, run:
+
+```bash
+cd backend
+npm run migrate
+```
+
+This groups previously unassigned messages into one `Imported conversation`. New messages are stored against a conversation ID.
+
+### 4. MCP server (optional)
 
 With the backend dependencies installed and `backend/.env` configured:
 
@@ -96,9 +108,14 @@ The MCP server communicates over stdio and provides `chat`, `get_history`, and `
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
 | GET | `/` | Backend health response |
-| GET | `/history` | Read conversation history |
+| GET | `/chats` | List conversations |
+| POST | `/chats` | Create a conversation |
+| GET | `/chats/:chatId/messages` | Read messages in a conversation |
+| PATCH | `/chats/:chatId` | Rename a conversation |
+| DELETE | `/chats/:chatId` | Delete a conversation and its messages |
+| GET | `/history` | Read legacy global history |
 | DELETE | `/history` | Clear MongoDB conversation history |
-| POST | `/chat` | Send a message, optionally with a file |
+| POST | `/chat` | Send a message (requires `chatId`; optionally accepts a file) |
 | POST | `/admin/knowledge` | Add a knowledge entry |
 | GET | `/admin/knowledge` | List knowledge entries |
 | DELETE | `/admin/knowledge/:id` | Delete a knowledge entry |
