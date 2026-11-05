@@ -4,7 +4,7 @@ A full-stack conversational assistant prototype with persistent chat history, a 
 
 ## Features in the current codebase
 
-- **Conversational chat UI** built with React, Vite, and reusable message/input/sidebar components.
+- **Conversational chat UI** built with Next.js App Router and React. The previous Vite UI remains in `frontend/src` while feature parity is migrated.
 - **Persistent conversation history** stored through MongoDB models in the Express API.
 - **Knowledge-base retrieval** using MongoDB text search across titles, content, and tags.
 - **LLM responses** powered by the Groq SDK. Text prompts use the configured chat model; image uploads use the configured vision model.
@@ -34,7 +34,7 @@ MCP stdio server --> Groq + local memory.json
 
 ## Tech stack
 
-- **Frontend:** React, Vite, Axios, React Markdown, Bootstrap, Lucide
+- **Frontend:** Next.js 15, React 18, TypeScript, CSS. Legacy Vite dependencies remain temporarily during migration.
 - **Backend:** Node.js, Express, Multer
 - **Database:** MongoDB + Mongoose
 - **AI:** Groq SDK
@@ -94,8 +94,6 @@ This groups previously unassigned messages into one `Imported conversation`. New
 
 ### 4. MCP server (optional)
 
-### 4. MCP server (optional)
-
 With the backend dependencies installed and `backend/.env` configured:
 
 ```bash
@@ -110,9 +108,14 @@ The MCP server communicates over stdio and provides `chat`, `get_history`, and `
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
 | GET | `/` | Backend health response |
-| GET | `/history` | Read conversation history |
+| GET | `/chats` | List conversations |
+| POST | `/chats` | Create a conversation |
+| GET | `/chats/:chatId/messages` | Read messages in a conversation |
+| PATCH | `/chats/:chatId` | Rename a conversation |
+| DELETE | `/chats/:chatId` | Delete a conversation and its messages |
+| GET | `/history` | Read legacy global history |
 | DELETE | `/history` | Clear MongoDB conversation history |
-| POST | `/chat` | Send a message, optionally with a file |
+| POST | `/chat` | Send a message (requires `chatId`; optionally accepts a file) |
 | POST | `/admin/knowledge` | Add a knowledge entry |
 | GET | `/admin/knowledge` | List knowledge entries |
 | DELETE | `/admin/knowledge/:id` | Delete a knowledge entry |
