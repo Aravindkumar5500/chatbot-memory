@@ -145,6 +145,84 @@ const fetchLatestNews = async (query) => {
 };
 
 
+// Conversation management (legacy history endpoints remain available during migration).
+const Chat = require('./models/Chat');
+
+app.get('/chats', async (req, res) => {
+  try {
+    const chats = await Chat.find().sort({ updatedAt: -1 }).lean();
+    res.json(chats);
+  } catch (error) {
+    console.error('List chats error:', error);
+    res.status(500).json({ error: 'Failed to retrieve conversations' });
+  }
+});
+
+app.post('/chats', async (req, res) => {
+  try {
+    const title = typeof req.body?.title === 'string' && req.body.title.trim()
+      ? req.body.title.trim().slice(0, 120)
+      : 'New chat';
+    const chat = await Chat.create({ title });
+    res.status(201).json(chat);
+  } catch (error) {
+    console.error('Create chat error:', error);
+    res.status(500).json({ error: 'Failed to create conversation' });
+  }
+});
+
+app.get('/chats/:chatId/messages', async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.chatId)) {
+      return res.status(400).json({ error: 'Invalid conversation id' });
+    }
+    const chat = await Chat.findById(req.params.chatId);
+    if (!chat) return res.status(404).json({ error: 'Conversation not found' });
+    const messages = await Message.find({ chatId: chat._id }).sort({ timestamp: 1 }).lean();
+    res.json(messages);
+  } catch (error) {
+    console.error('Get conversation messages error:', error);
+    res.status(500).json({ error: 'Failed to retrieve conversation messages' });
+  }
+});
+
+app.patch('/chats/:chatId', async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.chatId)) {
+      return res.status(400).json({ error: 'Invalid conversation id' });
+    }
+    const title = typeof req.body?.title === 'string' ? req.body.title.trim() : '';
+    if (!title || title.length > 120) {
+      return res.status(400).json({ error: 'Title must be between 1 and 120 characters' });
+    }
+    const chat = await Chat.findByIdAndUpdate(
+      req.params.chatId,
+      { title },
+      { new: true, runValidators: true }
+    );
+    if (!chat) return res.status(404).json({ error: 'Conversation not found' });
+    res.json(chat);
+  } catch (error) {
+    console.error('Rename conversation error:', error);
+    res.status(500).json({ error: 'Failed to rename conversation' });
+  }
+});
+
+app.delete('/chats/:chatId', async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.chatId)) {
+      return res.status(400).json({ error: 'Invalid conversation id' });
+    }
+    const chat = await Chat.findByIdAndDelete(req.params.chatId);
+    if (!chat) return res.status(404).json({ error: 'Conversation not found' });
+    await Message.deleteMany({ chatId: chat._id });
+    res.json({ message: 'Conversation deleted' });
+  } catch (error) {
+    console.error('Delete conversation error:', error);
+    res.status(500).json({ error: 'Failed to delete conversation' });
+  }
+});
+
 // Get history
 app.get('/history', async (req, res) => {
   const history = await getHistory();
