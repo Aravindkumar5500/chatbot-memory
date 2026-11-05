@@ -38,9 +38,9 @@ app.get('/', (req, res) => {
 });
 
 // Function to read history from MongoDB
-const getHistory = async () => {
+const getHistory = async (chatId = null) => {
   try {
-    return await Message.find().sort({ timestamp: 1 });
+    return await Message.find(chatId ? { chatId } : {}).sort({ timestamp: 1 });
   } catch (err) {
     console.error('Error reading signal history:', err);
     return [];
@@ -48,9 +48,9 @@ const getHistory = async () => {
 };
 
 // Function to save message to MongoDB
-const saveMessage = async (role, text) => {
+const saveMessage = async (role, text, chatId = null) => {
   try {
-    const newMessage = new Message({ role, text });
+    const newMessage = new Message({ role, text, ...(chatId ? { chatId } : {}) });
     await newMessage.save();
     return newMessage;
   } catch (err) {
