@@ -1,8 +1,22 @@
-# React + Vite
+# Chatbot Memory — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite frontend for the [Chatbot Memory](https://github.com/Aravindkumar5500/chatbot-memory) project.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+npm install
+npm run dev
+```
+
+The current frontend sends requests to the backend at `http://localhost:3001`. Start the Express backend in the sibling `backend` directory before using chat, history, or file upload.
+
+## Included UI
+
+- Conversation history and message rendering
+- Chat composer with file attachment
+- PDF/image-aware chat submission
+- Browser speech input when supported
+- Sidebar controls for starting a new chat and clearing history
+
+See the repository root README for backend configuration, MongoDB setup, AI provider keys, MCP tools, API endpoints, and security notes.
