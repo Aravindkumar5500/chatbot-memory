@@ -242,7 +242,7 @@ app.delete('/history', async (req, res) => {
 // Chat endpoint
 app.post('/chat', upload.single('file'), async (req, res) => {
   console.log('POST /chat hit');
-  const { message } = req.body;
+  const { message, chatId } = req.body;
   const file = req.file;
   let finalMessage = message || "";
   let imagePayload = null;
@@ -274,7 +274,13 @@ app.post('/chat', upload.single('file'), async (req, res) => {
       return res.status(400).json({ error: 'No message or file provided' });
     }
 
-    const history = await getHistory();
+    if (!chatId || !mongoose.isValidObjectId(chatId)) {
+      return res.status(400).json({ error: 'A valid chatId is required' });
+    }
+    const chat = await Chat.findById(chatId);
+    if (!chat) return res.status(404).json({ error: 'Conversation not found' });
+
+    const history = await getHistory(chat._id);
     console.log(`History count: ${history.length}`);
 
     // Step 1 — Search MongoDB knowledge base
@@ -333,7 +339,7 @@ STRICT RULES:
     
     // Save user message in our local history before the await call
     const displayMsg = finalMessage || (file ? `Sent a file: ${file.originalname}` : "");
-    await saveMessage('user', displayMsg);
+    await saveMessage('user', displayMsg, chat._id);
 
     const response = await client.chat.completions.create({
       model: imagePayload ? "llama-3.2-11b-vision-preview" : "llama-3.3-70b-versatile",
@@ -342,7 +348,10 @@ STRICT RULES:
 
     console.log("Groq response received!");
     const aiText = response.choices[0].message.content;
-    const botMsg = await saveMessage('bot', aiText);
+    const botMsg = await saveMessage('bot', aiText, chat._id);
+    chat.updatedAt = new Date();
+    if (chat.title === 'New chat' && message) chat.title = message.trim().slice(0, 60) || chat.title;
+    await chat.save();
     res.json(botMsg);
 
   } catch (error) {
