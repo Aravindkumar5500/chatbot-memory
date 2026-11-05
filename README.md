@@ -17,7 +17,7 @@ A full-stack conversational assistant prototype with persistent chat history, a 
 ## Architecture
 
 ```text
-frontend (React + Vite)
+frontend (Next.js + React)
         |
         | HTTP / multipart form data
         v
@@ -43,7 +43,7 @@ MCP stdio server --> Groq + local memory.json
 
 ## Run locally
 
-Requirements: Node.js, npm, and a MongoDB database.
+Requirements: Node.js 18.18+ (20 LTS recommended), npm, and a MongoDB database. The frontend is being migrated from Vite to Next.js; the legacy `frontend/src` implementation is retained during this transition.
 
 ### 1. Backend
 
@@ -75,12 +75,26 @@ In another terminal:
 ```bash
 cd frontend
 npm install
+# Optional: set NEXT_PUBLIC_API_URL=http://localhost:3001 in .env.local
 npm run dev
 ```
 
-The current frontend uses the backend at `http://localhost:3001`. Start the backend before sending messages.
+Open `http://localhost:3000`. The Next.js workspace uses the conversation API at `http://localhost:3001` by default. Start MongoDB and the backend before sending messages.
 
-### 3. MCP server (optional)
+### 3. Migrate existing messages (run once)
+
+After configuring `backend/.env` and starting MongoDB, run:
+
+```bash
+cd backend
+npm run migrate
+```
+
+This groups previously unassigned messages into one `Imported conversation`. New messages are stored against a conversation ID.
+
+### 4. MCP server (optional)
+
+### 4. MCP server (optional)
 
 With the backend dependencies installed and `backend/.env` configured:
 
