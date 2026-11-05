@@ -6,7 +6,8 @@
     "start": "node server.js",
     "dev": "nodemon --ignore memory.json server.js",
     "mcp": "node mcp_server.js",
-    "test": "jest"
+    "test": "jest",
+    "migrate": "node scripts/migrate-conversations.js"
   },
   "keywords": [],
   "author": "",
